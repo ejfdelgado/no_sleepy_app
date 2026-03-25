@@ -13,7 +13,8 @@ import java.util.Locale
 class AlarmItemAdapter(
     private var items: List<AlarmItem>,
     private val onEditClick: (AlarmItem) -> Unit,
-    private val onDeleteClick: (AlarmItem) -> Unit
+    private val onDeleteClick: (AlarmItem) -> Unit,
+    private val onToggleClick: (AlarmItem, Boolean) -> Unit
 ) : RecyclerView.Adapter<AlarmItemAdapter.ViewHolder>() {
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -21,6 +22,7 @@ class AlarmItemAdapter(
         val datesTextView: TextView = view.findViewById(R.id.tv_alarm_dates)
         val editButton: Button = view.findViewById(R.id.btn_edit_alarm)
         val deleteButton: Button = view.findViewById(R.id.btn_delete_alarm)
+        val enabledSwitch: android.widget.Switch = view.findViewById(R.id.switch_alarm_enabled)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -41,6 +43,12 @@ class AlarmItemAdapter(
 
         holder.editButton.setOnClickListener { onEditClick(item) }
         holder.deleteButton.setOnClickListener { onDeleteClick(item) }
+
+        holder.enabledSwitch.setOnCheckedChangeListener(null)
+        holder.enabledSwitch.isChecked = item.enabled
+        holder.enabledSwitch.setOnCheckedChangeListener { _, isChecked ->
+            onToggleClick(item, isChecked)
+        }
     }
 
     override fun getItemCount() = items.size

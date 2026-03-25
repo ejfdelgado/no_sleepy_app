@@ -77,6 +77,18 @@ class MainActivity : AppCompatActivity() {
                 }
                 .setNegativeButton("Cancel", null)
                 .show()
+        }, { item, isChecked ->
+            // Toggle enabled
+            progressBar.visibility = android.view.View.VISIBLE
+            FirebaseFirestore.getInstance().collection("alarm_item").document(item.id)
+                .update("enabled", isChecked)
+                .addOnSuccessListener {
+                    progressBar.visibility = android.view.View.GONE
+                }
+                .addOnFailureListener { e ->
+                    progressBar.visibility = android.view.View.GONE
+                    android.widget.Toast.makeText(this@MainActivity, "Error updating status: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+                }
         })
         
         recyclerView.layoutManager = LinearLayoutManager(this)

@@ -7,5 +7,6 @@ data class AlarmItem(
     val title: String = "",
     val owner: String = "",
     val created: Long = 0,
-    val updated: Long = 0
+    val updated: Long = 0,
+    @field:JvmField val enabled: Boolean = true
 )

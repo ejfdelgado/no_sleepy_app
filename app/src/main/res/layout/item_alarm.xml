@@ -30,7 +30,14 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:layout_marginTop="12dp"
-        android:gravity="end">
+        android:gravity="center_vertical">
+
+        <Switch
+            android:id="@+id/switch_alarm_enabled"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Enabled" />
 
         <Button
             android:id="@+id/btn_edit_alarm"
