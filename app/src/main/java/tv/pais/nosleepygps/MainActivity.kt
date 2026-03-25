@@ -59,6 +59,9 @@ class MainActivity : AppCompatActivity() {
         }, { item ->
             // Delete
             FirebaseFirestore.getInstance().collection("alarm_item").document(item.id).delete()
+                .addOnFailureListener { e ->
+                    android.widget.Toast.makeText(this@MainActivity, "Error deleting alarm: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+                }
         })
         
         recyclerView.layoutManager = LinearLayoutManager(this)
@@ -97,6 +100,7 @@ class MainActivity : AppCompatActivity() {
             .orderBy("updated", Query.Direction.DESCENDING)
             .addSnapshotListener { snapshot, e ->
                 if (e != null) {
+                    android.widget.Toast.makeText(this@MainActivity, "Error loading alarms: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
                     return@addSnapshotListener
                 }
                 if (snapshot != null) {

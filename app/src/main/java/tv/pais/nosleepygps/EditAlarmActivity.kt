@@ -70,12 +70,19 @@ class EditAlarmActivity : AppCompatActivity() {
                 created = now,
                 updated = now
             )
-            newDocRef.set(newAlarm).addOnSuccessListener { finish() }
+            newDocRef.set(newAlarm)
+                .addOnSuccessListener { finish() }
+                .addOnFailureListener { e ->
+                    Toast.makeText(this, "Error creating alarm: ${e.message}", Toast.LENGTH_LONG).show()
+                }
         } else {
             // Update
             db.document(alarmId!!)
                 .update("title", title, "updated", now)
                 .addOnSuccessListener { finish() }
+                .addOnFailureListener { e ->
+                    Toast.makeText(this, "Error updating alarm: ${e.message}", Toast.LENGTH_LONG).show()
+                }
         }
     }
 }
