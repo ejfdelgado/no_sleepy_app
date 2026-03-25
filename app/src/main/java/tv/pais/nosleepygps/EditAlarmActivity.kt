@@ -12,6 +12,7 @@ class EditAlarmActivity : AppCompatActivity() {
 
     private lateinit var etTitle: EditText
     private lateinit var btnSave: Button
+    private lateinit var progressBar: android.widget.ProgressBar
     
     private var alarmId: String? = null
 
@@ -21,6 +22,7 @@ class EditAlarmActivity : AppCompatActivity() {
 
         etTitle = findViewById(R.id.et_alarm_title)
         btnSave = findViewById(R.id.btn_save_alarm)
+        progressBar = findViewById(R.id.progress_bar)
 
         alarmId = intent.getStringExtra("ALARM_ID")
 
@@ -60,6 +62,9 @@ class EditAlarmActivity : AppCompatActivity() {
         val db = FirebaseFirestore.getInstance().collection("alarm_item")
         val now = System.currentTimeMillis()
 
+        progressBar.visibility = android.view.View.VISIBLE
+        btnSave.isEnabled = false
+
         if (alarmId == null) {
             // Create
             val newDocRef = db.document()
@@ -71,16 +76,28 @@ class EditAlarmActivity : AppCompatActivity() {
                 updated = now
             )
             newDocRef.set(newAlarm)
-                .addOnSuccessListener { finish() }
+                .addOnSuccessListener {
+                    progressBar.visibility = android.view.View.GONE
+                    btnSave.isEnabled = true
+                    finish()
+                }
                 .addOnFailureListener { e ->
+                    progressBar.visibility = android.view.View.GONE
+                    btnSave.isEnabled = true
                     Toast.makeText(this, "Error creating alarm: ${e.message}", Toast.LENGTH_LONG).show()
                 }
         } else {
             // Update
             db.document(alarmId!!)
                 .update("title", title, "updated", now)
-                .addOnSuccessListener { finish() }
+                .addOnSuccessListener {
+                    progressBar.visibility = android.view.View.GONE
+                    btnSave.isEnabled = true
+                    finish()
+                }
                 .addOnFailureListener { e ->
+                    progressBar.visibility = android.view.View.GONE
+                    btnSave.isEnabled = true
                     Toast.makeText(this, "Error updating alarm: ${e.message}", Toast.LENGTH_LONG).show()
                 }
         }

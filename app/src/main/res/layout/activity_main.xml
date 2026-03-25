@@ -75,4 +75,11 @@
         app:srcCompat="@android:drawable/ic_input_add"
         android:contentDescription="Add Alarm Item" />
 
+    <ProgressBar
+        android:id="@+id/progress_bar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:visibility="gone" />
+
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

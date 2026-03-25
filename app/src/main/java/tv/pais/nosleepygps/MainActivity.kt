@@ -25,8 +25,10 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btnLogout: Button
     private lateinit var recyclerView: RecyclerView
     private lateinit var fabAddAlarm: FloatingActionButton
+    private lateinit var progressBar: android.widget.ProgressBar
     
     private lateinit var adapter: AlarmItemAdapter
+    private var snapshotListener: com.google.firebase.firestore.ListenerRegistration? = null
 
     private val signInLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -50,6 +52,7 @@ class MainActivity : AppCompatActivity() {
         btnLogout = findViewById(R.id.btn_logout)
         recyclerView = findViewById(R.id.recycler_view_alarms)
         fabAddAlarm = findViewById(R.id.fab_add_alarm)
+        progressBar = findViewById(R.id.progress_bar)
 
         adapter = AlarmItemAdapter(emptyList(), { item ->
             // Edit
@@ -62,8 +65,13 @@ class MainActivity : AppCompatActivity() {
                 .setTitle("Delete Alarm")
                 .setMessage("Are you sure you want to delete '${item.title}'?")
                 .setPositiveButton("Delete") { _, _ ->
+                    progressBar.visibility = android.view.View.VISIBLE
                     FirebaseFirestore.getInstance().collection("alarm_item").document(item.id).delete()
+                        .addOnSuccessListener {
+                            progressBar.visibility = android.view.View.GONE
+                        }
                         .addOnFailureListener { e ->
+                            progressBar.visibility = android.view.View.GONE
                             android.widget.Toast.makeText(this@MainActivity, "Error deleting alarm: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
                         }
                 }
@@ -80,6 +88,9 @@ class MainActivity : AppCompatActivity() {
         }
 
         btnLogout.setOnClickListener {
+            snapshotListener?.remove()
+            snapshotListener = null
+            adapter.updateData(emptyList())
             AuthUI.getInstance().signOut(this).addOnCompleteListener { updateUI() }
         }
 
@@ -102,10 +113,15 @@ class MainActivity : AppCompatActivity() {
 
     private fun loadAlarms() {
         val user = FirebaseAuth.getInstance().currentUser ?: return
-        FirebaseFirestore.getInstance().collection("alarm_item")
+        
+        snapshotListener?.remove()
+        
+        progressBar.visibility = android.view.View.VISIBLE
+        snapshotListener = FirebaseFirestore.getInstance().collection("alarm_item")
             .whereEqualTo("owner", user.uid)
             .orderBy("updated", Query.Direction.DESCENDING)
             .addSnapshotListener { snapshot, e ->
+                progressBar.visibility = android.view.View.GONE
                 if (e != null) {
                     android.widget.Toast.makeText(this@MainActivity, "Error loading alarms: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
                     return@addSnapshotListener
