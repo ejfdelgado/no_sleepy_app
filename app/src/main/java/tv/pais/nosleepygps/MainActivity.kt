@@ -58,10 +58,17 @@ class MainActivity : AppCompatActivity() {
             startActivity(intent)
         }, { item ->
             // Delete
-            FirebaseFirestore.getInstance().collection("alarm_item").document(item.id).delete()
-                .addOnFailureListener { e ->
-                    android.widget.Toast.makeText(this@MainActivity, "Error deleting alarm: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+            androidx.appcompat.app.AlertDialog.Builder(this@MainActivity)
+                .setTitle("Delete Alarm")
+                .setMessage("Are you sure you want to delete '${item.title}'?")
+                .setPositiveButton("Delete") { _, _ ->
+                    FirebaseFirestore.getInstance().collection("alarm_item").document(item.id).delete()
+                        .addOnFailureListener { e ->
+                            android.widget.Toast.makeText(this@MainActivity, "Error deleting alarm: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+                        }
                 }
+                .setNegativeButton("Cancel", null)
+                .show()
         })
         
         recyclerView.layoutManager = LinearLayoutManager(this)
