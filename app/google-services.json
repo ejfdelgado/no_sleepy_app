@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "702331765610",
+    "project_id": "no-sleepy-friend",
+    "storage_bucket": "no-sleepy-friend.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:702331765610:android:8a3c90e095c1a289109b13",
+        "android_client_info": {
+          "package_name": "tv.pais.nosleepygps"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDIGlzu8IsFV27mUK1zdEUfJ5CnbfmByVg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
