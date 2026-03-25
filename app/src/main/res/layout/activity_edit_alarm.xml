@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Create / Edit Alarm"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="24dp" />
+
+    <EditText
+        android:id="@+id/et_alarm_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Enter Alarm Title"
+        android:inputType="textCapSentences"
+        android:layout_marginBottom="24dp" />
+
+    <Button
+        android:id="@+id/btn_save_alarm"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Save Alarm"
+        android:padding="12dp" />
+
+</LinearLayout>
