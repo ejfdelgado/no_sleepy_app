@@ -51,3 +51,4 @@ captures/
 # macOS
 .DS_Store
 
+app/google-services.json
