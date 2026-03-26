@@ -1,4 +1,3 @@
-- Optimize gps traking only when at least one alarm is enabled.
 - Allow share an alarm to automatically add a new one with some specific name, latitud and longitude.
 - multilanguage.
 - customize icon and splash.
