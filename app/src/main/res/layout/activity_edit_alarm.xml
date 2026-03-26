@@ -57,12 +57,28 @@
             
     </FrameLayout>
 
-    <Button
-        android:id="@+id/btn_save_alarm"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Save Alarm"
-        android:padding="12dp" />
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/btn_cancel_alarm"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Cancel"
+            android:padding="12dp"
+            android:layout_marginEnd="8dp" />
+
+        <Button
+            android:id="@+id/btn_save_alarm"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Save Alarm"
+            android:padding="12dp" />
+    </LinearLayout>
 
     <ProgressBar
         android:id="@+id/progress_bar"

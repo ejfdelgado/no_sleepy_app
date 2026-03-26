@@ -1,2 +1,5 @@
+- add a button to select current location.
 - Allow share an alarm to automatically add a new one with some specific name, latitud and longitude.
-- 
+- allow parametrize distance, timeout.
+- multilanguage.
+- customize icon and splash.
