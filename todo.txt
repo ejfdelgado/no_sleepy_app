@@ -1,5 +1,6 @@
+- Place on local.properties the default distance and default timeout.
 - add a button to select current location.
 - Allow share an alarm to automatically add a new one with some specific name, latitud and longitude.
-- allow parametrize distance, timeout.
 - multilanguage.
 - customize icon and splash.
+- Optimize gps traking only when at least one alarm is enabled.

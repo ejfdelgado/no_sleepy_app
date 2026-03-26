@@ -23,7 +23,7 @@ class GpsTrackerService : Service() {
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var locationCallback: LocationCallback
     private var mediaPlayer: MediaPlayer? = null
-    
+
     private var activeAlarms = mutableListOf<AlarmItem>()
     private var firestoreListener: ListenerRegistration? = null
     private var isPlaying = false
@@ -42,13 +42,14 @@ class GpsTrackerService : Service() {
         createNotificationChannel()
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
-        locationCallback = object : LocationCallback() {
-            override fun onLocationResult(locationResult: LocationResult) {
-                for (location in locationResult.locations) {
-                    checkAlarms(location)
+        locationCallback =
+                object : LocationCallback() {
+                    override fun onLocationResult(locationResult: LocationResult) {
+                        for (location in locationResult.locations) {
+                            checkAlarms(location)
+                        }
+                    }
                 }
-            }
-        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -69,10 +70,18 @@ class GpsTrackerService : Service() {
 
     @SuppressLint("MissingPermission")
     private fun startLocationUpdates() {
-        val locationRequest = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 15000)
-            .setMinUpdateIntervalMillis(10000)
-            .build()
-        fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper())
+        val locationRequest =
+                LocationRequest.Builder(
+                                Priority.PRIORITY_HIGH_ACCURACY,
+                                BuildConfig.DEFAULT_TIMEOUT_MS.toLong()
+                        )
+                        .setMinUpdateIntervalMillis(BuildConfig.DEFAULT_TIMEOUT_MS.toLong() * 2 / 3)
+                        .build()
+        fusedLocationClient.requestLocationUpdates(
+                locationRequest,
+                locationCallback,
+                Looper.getMainLooper()
+        )
     }
 
     private fun startFirestoreSync() {
@@ -83,24 +92,25 @@ class GpsTrackerService : Service() {
         }
 
         val db = FirebaseFirestore.getInstance()
-        firestoreListener = db.collection("alarm_item")
-            .whereEqualTo("owner", user.uid)
-            .whereEqualTo("enabled", true)
-            .addSnapshotListener { snapshot, e ->
-                if (e != null) {
-                    Log.e("GpsTrackerService", "Listen failed.", e)
-                    return@addSnapshotListener
-                }
-                
-                activeAlarms.clear()
-                for (doc in snapshot!!) {
-                    val alarm = doc.toObject(AlarmItem::class.java)
-                    // Only track alarms with valid coordinates
-                    if (alarm.latitude != 0.0 || alarm.longitude != 0.0) {
-                        activeAlarms.add(alarm)
-                    }
-                }
-            }
+        firestoreListener =
+                db.collection("alarm_item")
+                        .whereEqualTo("owner", user.uid)
+                        .whereEqualTo("enabled", true)
+                        .addSnapshotListener { snapshot, e ->
+                            if (e != null) {
+                                Log.e("GpsTrackerService", "Listen failed.", e)
+                                return@addSnapshotListener
+                            }
+
+                            activeAlarms.clear()
+                            for (doc in snapshot!!) {
+                                val alarm = doc.toObject(AlarmItem::class.java)
+                                // Only track alarms with valid coordinates
+                                if (alarm.latitude != 0.0 || alarm.longitude != 0.0) {
+                                    activeAlarms.add(alarm)
+                                }
+                            }
+                        }
     }
 
     private fun checkAlarms(currentLocation: Location) {
@@ -109,13 +119,15 @@ class GpsTrackerService : Service() {
         for (alarm in activeAlarms) {
             val results = FloatArray(1)
             Location.distanceBetween(
-                currentLocation.latitude, currentLocation.longitude,
-                alarm.latitude, alarm.longitude,
-                results
+                    currentLocation.latitude,
+                    currentLocation.longitude,
+                    alarm.latitude,
+                    alarm.longitude,
+                    results
             )
 
             val distanceInMeters = results[0]
-            if (distanceInMeters <= 100) {
+            if (distanceInMeters <= BuildConfig.MIN_DISTANCE_METERS.toInt()) {
                 triggerAlarm(alarm)
                 break
             }
@@ -125,7 +137,7 @@ class GpsTrackerService : Service() {
     private fun triggerAlarm(alarm: AlarmItem) {
         isPlaying = true
         currentTriggeredAlarmId = alarm.id
-        
+
         // Update notification
         val notification = createNotification("ALARM TRIGGERED: ${alarm.title}", true)
         val notificationManager = getSystemService(NotificationManager::class.java)
@@ -141,7 +153,9 @@ class GpsTrackerService : Service() {
 
         // Vibrate
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            val vibratorManager = getSystemService(android.content.Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
+            val vibratorManager =
+                    getSystemService(android.content.Context.VIBRATOR_MANAGER_SERVICE) as
+                            VibratorManager
             vibrator = vibratorManager.defaultVibrator
         } else {
             vibrator = getSystemService(android.content.Context.VIBRATOR_SERVICE) as Vibrator
@@ -150,16 +164,16 @@ class GpsTrackerService : Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             vibrator?.vibrate(VibrationEffect.createWaveform(pattern, 0))
         } else {
-            @Suppress("DEPRECATION")
-            vibrator?.vibrate(pattern, 0)
+            @Suppress("DEPRECATION") vibrator?.vibrate(pattern, 0)
         }
 
         // Launch full-screen activity to stop it
-        val intent = Intent(this, AlarmFiredActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-            putExtra("ALARM_TITLE", alarm.title)
-            putExtra("ALARM_ID", alarm.id)
-        }
+        val intent =
+                Intent(this, AlarmFiredActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    putExtra("ALARM_TITLE", alarm.title)
+                    putExtra("ALARM_ID", alarm.id)
+                }
         startActivity(intent)
     }
 
@@ -171,14 +185,16 @@ class GpsTrackerService : Service() {
         }
         vibrator?.cancel()
         vibrator = null
-        
+
         isPlaying = false
         currentTriggeredAlarmId = null
 
         // Disable the alarm in Firestore so it doesn't immediately re-trigger
         if (alarmId != null) {
-            FirebaseFirestore.getInstance().collection("alarm_item").document(alarmId)
-                .update("enabled", false)
+            FirebaseFirestore.getInstance()
+                    .collection("alarm_item")
+                    .document(alarmId)
+                    .update("enabled", false)
         }
 
         // Revert notification back to normal
@@ -187,31 +203,47 @@ class GpsTrackerService : Service() {
         notificationManager.notify(NOTIFICATION_ID, notification)
     }
 
-    private fun createNotification(contentText: String, isTriggered: Boolean = false): Notification {
-        val stopIntent = Intent(this, GpsTrackerService::class.java).apply {
-            action = ACTION_STOP_ALARM
-            putExtra(EXTRA_ALARM_ID, currentTriggeredAlarmId)
-        }
-        val stopPendingIntent = PendingIntent.getService(
-            this, 0, stopIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
+    private fun createNotification(
+            contentText: String,
+            isTriggered: Boolean = false
+    ): Notification {
+        val stopIntent =
+                Intent(this, GpsTrackerService::class.java).apply {
+                    action = ACTION_STOP_ALARM
+                    putExtra(EXTRA_ALARM_ID, currentTriggeredAlarmId)
+                }
+        val stopPendingIntent =
+                PendingIntent.getService(
+                        this,
+                        0,
+                        stopIntent,
+                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
 
-        val builder = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("No Sleepy GPS")
-            .setContentText(contentText)
-            .setSmallIcon(android.R.drawable.ic_menu_mylocation)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setOngoing(true)
-        
+        val builder =
+                NotificationCompat.Builder(this, CHANNEL_ID)
+                        .setContentTitle("No Sleepy GPS")
+                        .setContentText(contentText)
+                        .setSmallIcon(android.R.drawable.ic_menu_mylocation)
+                        .setPriority(NotificationCompat.PRIORITY_HIGH)
+                        .setOngoing(true)
+
         if (isTriggered) {
-             builder.addAction(android.R.drawable.ic_media_pause, "STOP ALARM", stopPendingIntent)
-             // Full screen intent for Android 10+ background activity restrictions
-             val fullScreenIntent = Intent(this, AlarmFiredActivity::class.java).apply {
-                 putExtra("ALARM_TITLE", contentText.replace("ALARM TRIGGERED: ", ""))
-                 putExtra("ALARM_ID", currentTriggeredAlarmId)
-             }
-             val fullScreenPendingIntent = PendingIntent.getActivity(this, 0, fullScreenIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-             builder.setFullScreenIntent(fullScreenPendingIntent, true)
+            builder.addAction(android.R.drawable.ic_media_pause, "STOP ALARM", stopPendingIntent)
+            // Full screen intent for Android 10+ background activity restrictions
+            val fullScreenIntent =
+                    Intent(this, AlarmFiredActivity::class.java).apply {
+                        putExtra("ALARM_TITLE", contentText.replace("ALARM TRIGGERED: ", ""))
+                        putExtra("ALARM_ID", currentTriggeredAlarmId)
+                    }
+            val fullScreenPendingIntent =
+                    PendingIntent.getActivity(
+                            this,
+                            0,
+                            fullScreenIntent,
+                            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                    )
+            builder.setFullScreenIntent(fullScreenPendingIntent, true)
         }
 
         return builder.build()
@@ -219,11 +251,12 @@ class GpsTrackerService : Service() {
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val serviceChannel = NotificationChannel(
-                CHANNEL_ID,
-                "Location Service Channel",
-                NotificationManager.IMPORTANCE_HIGH
-            )
+            val serviceChannel =
+                    NotificationChannel(
+                            CHANNEL_ID,
+                            "Location Service Channel",
+                            NotificationManager.IMPORTANCE_HIGH
+                    )
             val manager = getSystemService(NotificationManager::class.java)
             manager.createNotificationChannel(serviceChannel)
         }

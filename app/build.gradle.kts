@@ -1,3 +1,6 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -15,6 +18,24 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
+
+        val localProperties = Properties().apply {
+            val localPropertiesFile = project.rootProject.file("local.properties")
+            if (localPropertiesFile.exists()) {
+                val inputStream = FileInputStream(localPropertiesFile)
+                load(inputStream)
+                inputStream.close()
+            }
+        }
+        val minDistance = localProperties.getProperty("MIN_DISTANCE_METERS") ?: "100"
+        val defaultTimeout = localProperties.getProperty("DEFAULT_TIMEOUT_MS") ?: "15000"
+        
+        buildConfigField("int", "MIN_DISTANCE_METERS", minDistance)
+        buildConfigField("int", "DEFAULT_TIMEOUT_MS", defaultTimeout)
+    }
+
+    buildFeatures {
+        buildConfig = true
     }
 
     buildTypes {
