@@ -5,7 +5,9 @@ import android.os.Bundle
 import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
+import android.annotation.SuppressLint
 import androidx.appcompat.app.AppCompatActivity
+import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
@@ -24,6 +26,7 @@ class EditAlarmActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnM
     private lateinit var btnSearch: Button
     private lateinit var btnSave: Button
     private lateinit var btnCancel: Button
+    private lateinit var btnCurrentLocation: Button
     private lateinit var progressBar: android.widget.ProgressBar
 
     private var mMap: GoogleMap? = null
@@ -42,6 +45,7 @@ class EditAlarmActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnM
         btnSearch = findViewById(R.id.btn_search_address)
         btnSave = findViewById(R.id.btn_save_alarm)
         btnCancel = findViewById(R.id.btn_cancel_alarm)
+        btnCurrentLocation = findViewById(R.id.btn_current_location)
         progressBar = findViewById(R.id.progress_bar)
 
         alarmId = intent.getStringExtra("ALARM_ID")
@@ -53,6 +57,7 @@ class EditAlarmActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnM
 
         btnSave.setOnClickListener { saveAlarm() }
         btnCancel.setOnClickListener { finish() }
+        btnCurrentLocation.setOnClickListener { useCurrentLocation() }
     }
 
     override fun onMapReady(googleMap: GoogleMap) {
@@ -130,6 +135,39 @@ class EditAlarmActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnM
         currentMarker?.remove()
         currentMarker =
                 mMap?.addMarker(MarkerOptions().position(position).title(title).draggable(true))
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun useCurrentLocation() {
+        val fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+        fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+            if (location != null) {
+                selectedLat = location.latitude
+                selectedLng = location.longitude
+                val pos = LatLng(selectedLat, selectedLng)
+                updateMapMarker(pos, "Current Location")
+                mMap?.animateCamera(CameraUpdateFactory.newLatLngZoom(pos, 15f))
+
+                Thread {
+                            try {
+                                val geocoder = Geocoder(this, Locale.getDefault())
+                                val addresses = geocoder.getFromLocation(selectedLat, selectedLng, 1)
+                                if (!addresses.isNullOrEmpty()) {
+                                    val addrStr = addresses[0].getAddressLine(0)
+                                    runOnUiThread {
+                                        etAddress.setText(addrStr)
+                                        currentMarker?.title = addrStr
+                                    }
+                                }
+                            } catch (e: Exception) {
+                                // Ignore
+                            }
+                        }
+                        .start()
+            } else {
+                Toast.makeText(this, "Could not get current location", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     override fun onMarkerDragStart(marker: Marker) {}
