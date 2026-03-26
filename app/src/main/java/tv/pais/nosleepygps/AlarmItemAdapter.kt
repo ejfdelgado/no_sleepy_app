@@ -53,6 +53,8 @@ class AlarmItemAdapter(
 
     override fun getItemCount() = items.size
     
+    fun getItems(): List<AlarmItem> = items
+
     fun updateData(newItems: List<AlarmItem>) {
         items = newItems
         notifyDataSetChanged()
