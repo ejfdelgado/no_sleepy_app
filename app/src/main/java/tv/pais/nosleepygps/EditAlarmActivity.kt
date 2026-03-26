@@ -35,6 +35,7 @@ class EditAlarmActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnM
 
     private var selectedLat: Double = 0.0
     private var selectedLng: Double = 0.0
+    private var isUserDraggingMap = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -63,6 +64,47 @@ class EditAlarmActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnM
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
         mMap?.setOnMarkerDragListener(this)
+
+        mMap?.setOnCameraMoveStartedListener { reason ->
+            if (reason == GoogleMap.OnCameraMoveStartedListener.REASON_GESTURE) {
+                isUserDraggingMap = true
+            }
+        }
+
+        mMap?.setOnCameraMoveListener {
+            if (isUserDraggingMap) {
+                mMap?.cameraPosition?.target?.let { target ->
+                    currentMarker?.position = target
+                }
+            }
+        }
+
+        mMap?.setOnCameraIdleListener {
+            if (isUserDraggingMap) {
+                mMap?.cameraPosition?.target?.let { target ->
+                    selectedLat = target.latitude
+                    selectedLng = target.longitude
+                    currentMarker?.position = target
+
+                    Thread {
+                        try {
+                            val geocoder = Geocoder(this@EditAlarmActivity, Locale.getDefault())
+                            val addresses = geocoder.getFromLocation(selectedLat, selectedLng, 1)
+                            if (!addresses.isNullOrEmpty()) {
+                                val addrStr = addresses[0].getAddressLine(0)
+                                runOnUiThread {
+                                    etAddress.setText(addrStr)
+                                    currentMarker?.title = addrStr
+                                }
+                            }
+                        } catch (e: Exception) {
+                            // Ignore exception
+                        }
+                    }.start()
+                }
+                isUserDraggingMap = false
+            }
+        }
 
         if (alarmId != null) {
             loadAlarmData(alarmId!!)
