@@ -102,6 +102,8 @@ class MainActivity : AppCompatActivity() {
             // Toggle enabled
             FirebaseFirestore.getInstance().collection("alarm_item").document(item.id)
                 .update("enabled", isChecked)
+            
+            evaluateGpsState(item, isChecked)
         })
         
         recyclerView.layoutManager = LinearLayoutManager(this)
@@ -172,8 +174,27 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun evaluateGpsState(toggledItem: AlarmItem, isChecked: Boolean) {
+        val anyOtherEnabled = adapter.getItems().any { it.id != toggledItem.id && it.enabled }
+        val shouldTrack = isChecked || anyOtherEnabled
+        
+        val intent = Intent(this, GpsTrackerService::class.java).apply {
+            action = if (shouldTrack) GpsTrackerService.ACTION_RESUME_TRACKING else GpsTrackerService.ACTION_PAUSE_TRACKING
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(intent)
+        } else {
+            startService(intent)
+        }
+    }
+
     private fun startGpsService() {
-        val intent = Intent(this, GpsTrackerService::class.java)
+        val anyEnabled = adapter.getItems().any { it.enabled }
+        val actionToSend = if (anyEnabled) GpsTrackerService.ACTION_RESUME_TRACKING else GpsTrackerService.ACTION_PAUSE_TRACKING
+        
+        val intent = Intent(this, GpsTrackerService::class.java).apply {
+            action = actionToSend
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             startForegroundService(intent)
         } else {

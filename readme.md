@@ -6,6 +6,7 @@ keytool -list -v \
 
 '''
 keytool -printcert -jarfile app/build/outputs/apk/debug/app-debug.apk
+keytool -list -v -keystore your-release-key.keystore
 '''
 
 '''

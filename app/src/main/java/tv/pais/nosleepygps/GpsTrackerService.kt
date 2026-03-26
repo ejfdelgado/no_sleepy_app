@@ -35,6 +35,8 @@ class GpsTrackerService : Service() {
         const val NOTIFICATION_ID = 1
         const val ACTION_STOP_ALARM = "ACTION_STOP_ALARM"
         const val EXTRA_ALARM_ID = "EXTRA_ALARM_ID"
+        const val ACTION_RESUME_TRACKING = "ACTION_RESUME_TRACKING"
+        const val ACTION_PAUSE_TRACKING = "ACTION_PAUSE_TRACKING"
     }
 
     override fun onCreate() {
@@ -53,23 +55,39 @@ class GpsTrackerService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (intent?.action == ACTION_STOP_ALARM) {
-            val alarmId = intent.getStringExtra(EXTRA_ALARM_ID)
-            stopAlarmSound(alarmId)
-            return START_STICKY
-        }
-
         val notification = createNotification("Tracking GPS for active alarms...")
         startForeground(NOTIFICATION_ID, notification)
 
-        startLocationUpdates()
+        when (intent?.action) {
+            ACTION_STOP_ALARM -> {
+                val alarmId = intent.getStringExtra(EXTRA_ALARM_ID)
+                stopAlarmSound(alarmId)
+                return START_STICKY
+            }
+            ACTION_PAUSE_TRACKING -> {
+                pauseLocationUpdates()
+            }
+            ACTION_RESUME_TRACKING -> {
+                resumeLocationUpdates()
+            }
+        }
+
         startFirestoreSync()
 
         return START_STICKY
     }
 
+    private var isTracking = false
+
+    private fun pauseLocationUpdates() {
+        if (!isTracking) return
+        fusedLocationClient.removeLocationUpdates(locationCallback)
+        isTracking = false
+    }
+
     @SuppressLint("MissingPermission")
-    private fun startLocationUpdates() {
+    private fun resumeLocationUpdates() {
+        if (isTracking) return
         val locationRequest =
                 LocationRequest.Builder(
                                 Priority.PRIORITY_HIGH_ACCURACY,
@@ -83,6 +101,7 @@ class GpsTrackerService : Service() {
                 locationCallback,
                 Looper.getMainLooper()
         )
+        isTracking = true
     }
 
     private fun startFirestoreSync() {
