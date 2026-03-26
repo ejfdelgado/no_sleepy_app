@@ -3,3 +3,7 @@
 - multilanguage.
 - customize icon and splash.
 - almacenar el geocode a unos tres diferentes niveles de precision.
+
+namespace: tv.pais.nosleepygps
+
+.setMinUpdateDistanceMeters(BuildConfig.MIN_DISTANCE_METERS.toFloat() 10)

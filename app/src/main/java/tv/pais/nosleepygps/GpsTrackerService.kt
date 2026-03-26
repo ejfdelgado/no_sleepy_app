@@ -55,8 +55,6 @@ class GpsTrackerService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val notification = createNotification("Tracking GPS for active alarms...")
-        startForeground(NOTIFICATION_ID, notification)
 
         when (intent?.action) {
             ACTION_STOP_ALARM -> {
@@ -80,20 +78,24 @@ class GpsTrackerService : Service() {
     private var isTracking = false
 
     private fun pauseLocationUpdates() {
-        if (!isTracking) return
-        fusedLocationClient.removeLocationUpdates(locationCallback)
-        isTracking = false
+        if (isTracking) {
+            fusedLocationClient.removeLocationUpdates(locationCallback)
+            isTracking = false
+        }
+        stopForeground(true)
+        stopSelf()
     }
 
     @SuppressLint("MissingPermission")
     private fun resumeLocationUpdates() {
         if (isTracking) return
+        val notification = createNotification("Tracking GPS for active alarms...")
+        startForeground(NOTIFICATION_ID, notification)
         val locationRequest =
                 LocationRequest.Builder(
                                 Priority.PRIORITY_HIGH_ACCURACY,
                                 BuildConfig.DEFAULT_TIMEOUT_MS.toLong()
                         )
-                        .setMinUpdateDistanceMeters(BuildConfig.MIN_DISTANCE_METERS.toFloat() / 10)
                         .setMinUpdateIntervalMillis(BuildConfig.DEFAULT_TIMEOUT_MS.toLong() * 2 / 3)
                         .build()
         fusedLocationClient.requestLocationUpdates(
@@ -216,11 +218,6 @@ class GpsTrackerService : Service() {
                     .document(alarmId)
                     .update("enabled", false)
         }
-
-        // Revert notification back to normal
-        val notification = createNotification("Tracking GPS for active alarms...")
-        val notificationManager = getSystemService(NotificationManager::class.java)
-        notificationManager.notify(NOTIFICATION_ID, notification)
     }
 
     private fun createNotification(

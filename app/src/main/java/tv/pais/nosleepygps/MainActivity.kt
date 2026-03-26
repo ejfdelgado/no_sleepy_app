@@ -181,7 +181,8 @@ class MainActivity : AppCompatActivity() {
         val intent = Intent(this, GpsTrackerService::class.java).apply {
             action = if (shouldTrack) GpsTrackerService.ACTION_RESUME_TRACKING else GpsTrackerService.ACTION_PAUSE_TRACKING
         }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        
+        if (shouldTrack && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             startForegroundService(intent)
         } else {
             startService(intent)
@@ -195,7 +196,8 @@ class MainActivity : AppCompatActivity() {
         val intent = Intent(this, GpsTrackerService::class.java).apply {
             action = actionToSend
         }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        
+        if (anyEnabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             startForegroundService(intent)
         } else {
             startService(intent)
