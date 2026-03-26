@@ -23,6 +23,8 @@ class GpsTrackerService : Service() {
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var locationCallback: LocationCallback
     private var mediaPlayer: MediaPlayer? = null
+    
+    private var latestLocation: Location? = null
 
     private var activeAlarms = mutableListOf<AlarmItem>()
     private var firestoreListener: ListenerRegistration? = null
@@ -48,6 +50,7 @@ class GpsTrackerService : Service() {
                 object : LocationCallback() {
                     override fun onLocationResult(locationResult: LocationResult) {
                         for (location in locationResult.locations) {
+                            latestLocation = location
                             checkAlarms(location)
                         }
                     }
@@ -106,12 +109,15 @@ class GpsTrackerService : Service() {
         isTracking = true
     }
 
+    @SuppressLint("MissingPermission")
     private fun startFirestoreSync() {
         val user = FirebaseAuth.getInstance().currentUser
         if (user == null) {
             stopSelf()
             return
         }
+
+        firestoreListener?.remove()
 
         val db = FirebaseFirestore.getInstance()
         firestoreListener =
@@ -130,6 +136,19 @@ class GpsTrackerService : Service() {
                                 // Only track alarms with valid coordinates
                                 if (alarm.latitude != 0.0 || alarm.longitude != 0.0) {
                                     activeAlarms.add(alarm)
+                                }
+                            }
+                            
+                            if (activeAlarms.isNotEmpty()) {
+                                if (latestLocation != null) {
+                                    checkAlarms(latestLocation!!)
+                                } else {
+                                    fusedLocationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null).addOnSuccessListener { location ->
+                                        if (location != null) {
+                                            latestLocation = location
+                                            checkAlarms(location)
+                                        }
+                                    }
                                 }
                             }
                         }
