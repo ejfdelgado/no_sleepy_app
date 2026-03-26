@@ -90,6 +90,8 @@ class GpsTrackerService : Service() {
             stopSelf()
             return
         }
+        
+        firestoreListener?.remove()
 
         val db = FirebaseFirestore.getInstance()
         firestoreListener =
