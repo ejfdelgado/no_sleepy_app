@@ -75,6 +75,7 @@ class GpsTrackerService : Service() {
                                 Priority.PRIORITY_HIGH_ACCURACY,
                                 BuildConfig.DEFAULT_TIMEOUT_MS.toLong()
                         )
+                        .setMinUpdateDistanceMeters(BuildConfig.MIN_DISTANCE_METERS.toFloat() / 10)
                         .setMinUpdateIntervalMillis(BuildConfig.DEFAULT_TIMEOUT_MS.toLong() * 2 / 3)
                         .build()
         fusedLocationClient.requestLocationUpdates(
