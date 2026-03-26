@@ -177,9 +177,6 @@ class EditAlarmActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnM
         val db = FirebaseFirestore.getInstance().collection("alarm_item")
         val now = System.currentTimeMillis()
 
-        progressBar.visibility = android.view.View.VISIBLE
-        btnSave.isEnabled = false
-
         if (alarmId == null) {
             // Create
             val newDocRef = db.document()
@@ -195,15 +192,8 @@ class EditAlarmActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnM
                 enabled = true
             )
             newDocRef.set(newAlarm)
-                .addOnSuccessListener {
-                    progressBar.visibility = android.view.View.GONE
-                    finish()
-                }
-                .addOnFailureListener { e ->
-                    progressBar.visibility = android.view.View.GONE
-                    btnSave.isEnabled = true
-                    Toast.makeText(this, "Error creating alarm: ${e.message}", Toast.LENGTH_LONG).show()
-                }
+            Toast.makeText(this, "Alarm saved (will sync when online)", Toast.LENGTH_SHORT).show()
+            finish()
         } else {
             // Update
             db.document(alarmId!!)
@@ -214,15 +204,8 @@ class EditAlarmActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnM
                     "longitude", selectedLng, 
                     "updated", now
                 )
-                .addOnSuccessListener {
-                    progressBar.visibility = android.view.View.GONE
-                    finish()
-                }
-                .addOnFailureListener { e ->
-                    progressBar.visibility = android.view.View.GONE
-                    btnSave.isEnabled = true
-                    Toast.makeText(this, "Error updating alarm: ${e.message}", Toast.LENGTH_LONG).show()
-                }
+            Toast.makeText(this, "Alarm updated (will sync when online)", Toast.LENGTH_SHORT).show()
+            finish()
         }
     }
 }

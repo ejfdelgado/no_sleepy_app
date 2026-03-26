@@ -8,6 +8,9 @@ import android.media.MediaPlayer
 import android.os.Build
 import android.os.IBinder
 import android.os.Looper
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.google.android.gms.location.*
@@ -25,6 +28,7 @@ class GpsTrackerService : Service() {
     private var firestoreListener: ListenerRegistration? = null
     private var isPlaying = false
     private var currentTriggeredAlarmId: String? = null
+    private var vibrator: Vibrator? = null
 
     companion object {
         const val CHANNEL_ID = "GpsTrackerChannel"
@@ -135,6 +139,21 @@ class GpsTrackerService : Service() {
             Log.e("GpsTrackerService", "Error playing alarm sound", e)
         }
 
+        // Vibrate
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val vibratorManager = getSystemService(android.content.Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
+            vibrator = vibratorManager.defaultVibrator
+        } else {
+            vibrator = getSystemService(android.content.Context.VIBRATOR_SERVICE) as Vibrator
+        }
+        val pattern = longArrayOf(0, 500, 500)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            vibrator?.vibrate(VibrationEffect.createWaveform(pattern, 0))
+        } else {
+            @Suppress("DEPRECATION")
+            vibrator?.vibrate(pattern, 0)
+        }
+
         // Launch full-screen activity to stop it
         val intent = Intent(this, AlarmFiredActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
@@ -150,6 +169,9 @@ class GpsTrackerService : Service() {
             mediaPlayer?.release()
             mediaPlayer = null
         }
+        vibrator?.cancel()
+        vibrator = null
+        
         isPlaying = false
         currentTriggeredAlarmId = null
 
