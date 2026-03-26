@@ -224,6 +224,15 @@ class MainActivity : AppCompatActivity() {
                 if (snapshot != null) {
                     val alarms = snapshot.toObjects(AlarmItem::class.java)
                     adapter.updateData(alarms)
+                    
+                    val intent = Intent(this@MainActivity, GpsTrackerService::class.java).apply {
+                        action = if (alarms.any { it.enabled }) GpsTrackerService.ACTION_RESUME_TRACKING else GpsTrackerService.ACTION_PAUSE_TRACKING
+                    }
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        startForegroundService(intent)
+                    } else {
+                        startService(intent)
+                    }
                 }
             }
     }
