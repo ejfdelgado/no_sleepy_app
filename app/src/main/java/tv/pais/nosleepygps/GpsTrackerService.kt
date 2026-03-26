@@ -89,9 +89,11 @@ class GpsTrackerService : Service() {
     private var isTracking = false
 
     private fun pauseLocationUpdates() {
-        if (!isTracking) return
-        fusedLocationClient.removeLocationUpdates(locationCallback)
-        isTracking = false
+        if (isTracking) {
+            fusedLocationClient.removeLocationUpdates(locationCallback)
+            isTracking = false
+        }
+        stopForeground(true)
     }
 
     @SuppressLint("MissingPermission")
