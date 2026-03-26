@@ -10,6 +10,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import android.os.Build
+import android.Manifest
 import com.firebase.ui.auth.AuthUI
 import com.firebase.ui.auth.IdpResponse
 import com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -33,12 +35,38 @@ class MainActivity : AppCompatActivity() {
     private val signInLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
+        if (result.resultCode == RESULT_OK) {
             updateUI()
         } else {
-            // Sign in failed or cancelled
-            layoutLoggedOut.visibility = View.VISIBLE
-            layoutLoggedIn.visibility = View.GONE
+            android.widget.Toast.makeText(this, "Sign in failed", android.widget.Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private val requestPermissionsLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        if (permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+            permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true) {
+            
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
+                androidx.core.content.ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_BACKGROUND_LOCATION) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                requestBackgroundLocationLauncher.launch(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+            } else {
+                startGpsService()
+            }
+        } else {
+            android.widget.Toast.makeText(this, "Location permission is required for alarms to work", android.widget.Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private val requestBackgroundLocationLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            startGpsService()
+        } else {
+            android.widget.Toast.makeText(this, "Background location highly recommended. Alarm might only fire when app is open.", android.widget.Toast.LENGTH_LONG).show()
+            startGpsService()
         }
     }
 
@@ -111,15 +139,60 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateUI() {
         val user = FirebaseAuth.getInstance().currentUser
-        if (user != null) {
-            layoutLoggedOut.visibility = View.GONE
-            layoutLoggedIn.visibility = View.VISIBLE
-            tvUserGreeting.text = "Welcome, ${user.displayName ?: user.email}!"
-            loadAlarms()
-        } else {
+        if (user == null) {
+            // Not logged in -> start login flow
             layoutLoggedOut.visibility = View.VISIBLE
             layoutLoggedIn.visibility = View.GONE
-            startSignIn()
+            val providers = arrayListOf(
+                AuthUI.IdpConfig.GoogleBuilder().build(),
+                AuthUI.IdpConfig.EmailBuilder().build()
+            )
+            val signInIntent = AuthUI.getInstance()
+                .createSignInIntentBuilder()
+                .setAvailableProviders(providers)
+                .build()
+            signInLauncher.launch(signInIntent)
+        } else {
+            // Logged in
+            layoutLoggedOut.visibility = View.GONE
+            layoutLoggedIn.visibility = View.VISIBLE
+            tvUserGreeting.text = "Hello, ${user.displayName ?: user.email}"
+            loadAlarms()
+            checkPermissionsAndStartService()
+        }
+    }
+
+    private fun checkPermissionsAndStartService() {
+        val permissions = mutableListOf(
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.ACCESS_COARSE_LOCATION
+        )
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            permissions.add(Manifest.permission.POST_NOTIFICATIONS)
+        }
+
+        val missingPermissions = permissions.filter {
+            androidx.core.content.ContextCompat.checkSelfPermission(this, it) != android.content.pm.PackageManager.PERMISSION_GRANTED
+        }
+
+        if (missingPermissions.isNotEmpty()) {
+            requestPermissionsLauncher.launch(missingPermissions.toTypedArray())
+        } else {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
+                androidx.core.content.ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_BACKGROUND_LOCATION) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                requestBackgroundLocationLauncher.launch(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+            } else {
+                startGpsService()
+            }
+        }
+    }
+
+    private fun startGpsService() {
+        val intent = Intent(this, GpsTrackerService::class.java)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(intent)
+        } else {
+            startService(intent)
         }
     }
 
@@ -143,19 +216,5 @@ class MainActivity : AppCompatActivity() {
                     adapter.updateData(alarms)
                 }
             }
-    }
-
-    private fun startSignIn() {
-        val providers = arrayListOf(
-            AuthUI.IdpConfig.EmailBuilder().build(),
-            AuthUI.IdpConfig.GoogleBuilder().build()
-        )
-
-        val signInIntent = AuthUI.getInstance()
-            .createSignInIntentBuilder()
-            .setAvailableProviders(providers)
-            .build()
-        
-        signInLauncher.launch(signInIntent)
     }
 }
